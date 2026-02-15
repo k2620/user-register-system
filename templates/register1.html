@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户注册</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        /* 基础重置 */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f5f7fa; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        /* 卡片容器 */
+        .register-card {
+            background: white;
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
+        }
+
+        .register-card h2 {
+            margin-bottom: 24px;
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a1a1a;
+            text-align: center;
+        }
+
+        /* 表单项 */
+        .form-group {
+            margin-bottom: 20px;
+            position: relative; 
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="password"] {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: #3182ce; 
+            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+        }
+
+        /* 密码切换图标  */
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 38px; 
+            cursor: pointer;
+            font-size: 12px;
+            color: #718096;
+            user-select: none;
+            background: transparent;
+            border: none;
+        }
+        
+        .toggle-password:hover {
+            color: #3182ce;
+        }
+
+        /* 按钮样式 */
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background-color: #3182ce;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-submit:hover {
+            background-color: #2b6cb0;
+        }
+
+        .btn-submit:disabled {
+            background-color: #a0aec0;
+            cursor: not-allowed;
+        }
+
+        /* 错误提示区域 */
+        #error-msg {
+            color: #e53e3e;
+            font-size: 13px;
+            margin-bottom: 15px;
+            text-align: center;
+            min-height: 20px; 
+        }
+
+        #success-msg {
+            color: #38a169;
+            font-size: 13px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="register-card">
+        <h2>注册账号</h2>
+        
+        <!-- 全局消息提示区 -->
+        <div id="error-msg"></div>
+        <div id="success-msg"></div>
+
+        <div class="form-group">
+            <label for="name">用户名</label>
+            <input type="text" id="name" placeholder="设置您的用户名">
+        </div>
+
+        <div class="form-group">
+            <label for="password">密码</label>
+            <input type="password" id="password" placeholder="8位以上，含大小写字母、数字">
+            <!-- 用文字或图标代替复选框 -->
+            <button type="button" class="toggle-password" onclick="toggleVisibility('password', this)">显示</button>
+        </div>
+
+        <div class="form-group">
+            <label for="confirm_password">确认密码</label>
+            <input type="password" id="confirm_password" placeholder="请再次输入密码">
+            <button type="button" class="toggle-password" onclick="toggleVisibility('confirm_password', this)">显示</button>
+        </div>
+
+        <button class="btn-submit" id="submitBtn" onclick="register()">立即注册</button>
+    </div>
+    
+    <script>
+    // 通用显示错误函数，代替 alert
+    function showMessage(msg, isError = true) {
+        const errDiv = document.getElementById("error-msg");
+        const succDiv = document.getElementById("success-msg");
+        
+        if (isError) {
+            errDiv.textContent = msg;
+            succDiv.textContent = "";
+        } else {
+            succDiv.textContent = msg;
+            errDiv.textContent = "";
+        }
+    }
+
+    // 通用切换密码显示/隐藏
+    function toggleVisibility(inputId, btnElement) {
+        const input = document.getElementById(inputId);
+        if (input.type === "password") {
+            input.type = "text";
+            btnElement.textContent = "隐藏";
+        } else {
+            input.type = "password";
+            btnElement.textContent = "显示";
+        }
+    }
+
+    // 注册函数
+    function register() {
+        const btn = document.getElementById("submitBtn");
+        
+        // 重置消息
+        showMessage("", true);
+
+        // 获取并清理数据
+        const name = document.getElementById("name").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const confirm_password = document.getElementById("confirm_password").value.trim();
+
+        // 1. 基础非空验证
+        if (!name || !password || !confirm_password){
+            showMessage("所有字段都必须填写");
+            return;
+        }
+
+        // 2. 密码长度验证
+        if (password.length < 8){
+            showMessage("密码长度不能少于8位数");
+            return;
+        }
+
+        // 3. 密码一致性验证 
+        if (password !== confirm_password){
+            showMessage("两次输入的密码不一致");
+            return;
+        }
+
+        // 4. 密码强度验证
+        const passwordStrength = checkPasswordStrength(password);
+        if (!passwordStrength.isValid){
+            showMessage(passwordStrength.message);
+            return;
+        }
+
+        // 开始提交：按钮变灰，防止重复点击
+        btn.disabled = true;
+        btn.textContent = "提交中...";
+
+        // 向后端提交数据
+        axios.post("http://127.0.0.1:5050/api/register", {
+            name: name,
+            password: password,
+            confirm_password: confirm_password
+        }, {
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => {
+            console.log("后端响应:", res.data);
+
+            if (res.data.code === 200) {
+                showMessage("注册成功！正在跳转...", false);
+                setTimeout(() => {
+                    window.location.href = "/"; // 延迟跳转让用户看清成功提示
+                }, 1000);
+            } else {
+                showMessage(res.data.msg || "注册失败，请重试");
+                btn.disabled = false;
+                btn.textContent = "立即注册";
+            }
+        })
+        .catch(err => {
+            console.error("请求失败:", err);
+            showMessage("网络请求失败，请检查服务器连接");
+            btn.disabled = false;
+            btn.textContent = "立即注册";
+        });
+    }
+
+    // 密码强度校验函数
+    function checkPasswordStrength(password) {
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+        const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+        let strength = 0;
+        if (hasUpperCase) strength++;
+        if (hasLowerCase) strength++;
+        if (hasNumbers) strength++;
+        if (hasSpecial) strength++; // 原代码这里写了两遍，已修正
+
+        console.log("密码强度:", strength, {大写:hasUpperCase, 小写:hasLowerCase, 数字:hasNumbers, 特殊:hasSpecial});
+
+        if (strength < 3) {
+            return {
+                isValid: false,
+                message: "密码太弱：需包含大写、小写、数字、符号中的至少3种"
+            };
+        }
+        return { isValid: true, message: "合格" };
+    };
+    </script>
+</body>
+</html>

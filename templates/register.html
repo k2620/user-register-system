@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册页面</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div>
+        <label for="">用户名：</label>
+        <input type="text" id="name" placeholder="请输入用户名：">
+    </div>
+    <div>
+        <label for="">密码：</label>
+        <input type="password" id="password" placeholder="请输入密码">
+        <input type="checkbox" id="show_password" onclick="togglePassword()">
+        <label for="show_password">显示密码</label>
+    </div>
+    <div>
+        <label for="">请确认密码：</label>
+        <input type="password" id="confirm_password" placeholder="请再次输入密码">
+        <input type="checkbox" id="show_confirm" onclick="toggleConfirmPassword()">
+        <label for="show_confirm">显示密码</label>
+    </div>
+    <button onclick="register()">提交</button>
+    <div id="result"></div>
+    
+    <script>
+    //创建函数
+    function register(){
+        //获取用户输入数据
+        name=document.getElementById("name").value.trim(),
+        password=document.getElementById("password").value.trim(),
+        confirm_password=document.getElementById("confirm_password").value.trim(),
+
+        console.log("===== 前端接收的数据 =====")
+        console.log("用户名:", name)
+        console.log("密码:", password)
+        console.log("确认密码:", confirm_password)
+        console.log("数据类型:", typeof name)
+        console.log("长度:", name.length)
+        console.log("=========================")
+
+        //验证数据
+        if (!name || !password || !confirm_password){
+            alert("用户名和密码不能为空！")
+            return;
+        };
+
+        //密码长度验证
+        if (password.length < 8){
+            alert("密码长度不能少于8位数！")
+            return;
+        }
+
+        //调用校验密码强度的函数
+        const passwordStrength=checkPasswordStrength(password)
+        if (!passwordStrength.isValid){
+            alert(passwordStrength.message)
+            return
+        }
+
+        //验证两次输入密码是否一致
+        if (password !== confirm_password){
+            alert("两次输入密码不一致！")
+            return;
+        }
+
+        //向后端提交数据
+        const res=axios.post("http://127.0.0.1:5050/api/register",{
+            name:name,
+            password:password,
+            confirm_password:confirm_password
+        },{
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(res => {
+            console.log("收到后端返回的数据:",res.data)
+
+            if (res.data.code===200){
+                alert("注册成功！")
+                //返回根目录
+                window.location.href="/"
+            }else{
+                alert("注册失败！"+res.data.msg || "未知错误")
+            }
+            document.getElementById("result").innerHTML=res.data.msg
+        }).catch(err =>{
+            console.log("请求失败:",err)
+            alert("网络请求失败，请稍后重试")
+        })
+
+    }
+
+    //密码强度校验函数
+    function checkPasswordStrength(password){
+        //定义正则表达式
+        const hasUpperCase=/[A-Z]/.test(password)  //有大写字母
+        const hasLowerCase=/[a-z]/.test(password)  //有小写字母
+        const hasNumbers=/\d/.test(password)    //有数字
+        const hasSpecial=/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) //有特殊字符
+
+        //计算密码强度  哪个为True就加1
+        let strength=0
+        if (hasSpecial) strength ++
+        if (hasLowerCase) strength ++
+        if (hasNumbers) strength ++
+        if (hasSpecial) strength ++
+
+        console.log("密码强度检查：",{
+            有大写:hasUpperCase,
+            有小写:hasLowerCase,
+            有数字:hasNumbers,
+            有特殊:hasSpecial,
+            强度得分:strength
+        })
+        //返回结果
+        if (strength < 3){
+            return {
+                isValid:false,
+                message:"密码强度太弱!必须包含大写字母、小写字母、数字、特殊字符中的至少3种"
+            }
+        }
+        return {
+            isValid:true,
+            message:"密码强度合格"
+        }
+    };
+
+    //切换密码显示/隐藏
+    function togglePassword(){
+        const passwordInput=document.getElementById("password")
+        const showPassword=document.getElementById("show_password")
+
+        if (showPassword.checked){
+            passwordInput.type="text"   //显示密码
+        }else{
+            passwordInput.type="password"   //隐藏密码
+        }
+    }
+    //切换确认密码显示/隐藏
+    function toggleConfirmPassword(){
+        const confirmInput=document.getElementById("confirm_password")
+        const showConfirm=document.getElementById("show_confirm")
+
+        if (showConfirm.checked){
+            confirmInput.type="text"
+        }else{
+            confirmInput.type="password"
+        }
+    }
+
+    </script>
+</body>
+</html>
